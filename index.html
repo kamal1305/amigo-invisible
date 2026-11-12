@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Amigo Invisible 🎄</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(180deg, #0d3b2e 0%, #14532d 55%, #7f1d1d 130%);
+    min-height: 100vh;
+    color: #fff;
+    padding: 24px 18px 40px;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; text-align: center; }
+  h1 { font-size: 2rem; margin: 8px 0 4px; }
+  .sub { font-size: 0.98rem; opacity: 0.9; line-height: 1.5; margin-bottom: 22px; }
+  .names { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .name-btn {
+    background: #fff; color: #14532d; border: none; border-radius: 16px;
+    padding: 20px 10px; font-size: 1.25rem; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  .name-btn:active { transform: scale(0.97); background: #fef3c7; }
+  .card {
+    background: #fff; color: #1f2937; border-radius: 20px;
+    padding: 26px 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .card h2 { font-size: 1.35rem; color: #14532d; margin-bottom: 6px; }
+  .card p { font-size: 0.95rem; line-height: 1.5; color: #4b5563; margin-bottom: 14px; }
+  input {
+    width: 100%; padding: 14px; font-size: 1.3rem; text-align: center;
+    letter-spacing: 2px; border: 2px solid #d1d5db; border-radius: 12px;
+    margin-bottom: 12px; text-transform: lowercase;
+  }
+  input:focus { outline: none; border-color: #14532d; }
+  .btn {
+    width: 100%; padding: 14px; font-size: 1.1rem; font-weight: 700;
+    border: none; border-radius: 12px; cursor: pointer;
+    background: #b91c1c; color: #fff;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-green { background: #14532d; }
+  .link { background: none; border: none; color: #6b7280; font-size: 0.9rem; margin-top: 12px; cursor: pointer; text-decoration: underline; }
+  .error { color: #b91c1c; font-weight: 700; margin-top: 10px; min-height: 1.2em; }
+  .gift { font-size: 3.4rem; margin-bottom: 8px; }
+  .recipient { font-size: 1.9rem; font-weight: 800; color: #b91c1c; margin: 6px 0 10px; }
+  .warn { font-size: 0.92rem; color: #4b5563; }
+  .foot { margin-top: 26px; font-size: 0.82rem; opacity: 0.75; line-height: 1.5; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="screen-home">
+    <div style="font-size:2.6rem">🎄</div>
+    <h1>Amigo Invisible</h1>
+    <p class="sub">Navidad 2026<br>Toca tu nombre, mete tu código privado y descubre a quién te ha tocado.</p>
+    <div class="names" id="names"></div>
+    <p class="foot">Cada código solo abre un nombre. Sin tu código no se ve nada, ni mirando el código de esta página. 🎁</p>
+  </div>
+
+  <div id="screen-code" class="hidden">
+    <div class="card">
+      <h2 id="code-title">Hola</h2>
+      <p>Mete el código privado que te llegó por mensaje. Solo tú lo tienes.</p>
+      <input id="code-input" type="text" placeholder="tu código" autocomplete="off" autocapitalize="none" maxlength="20">
+      <button class="btn" id="btn-reveal">Descubrir mi amigo invisible</button>
+      <div class="error" id="code-error"></div>
+      <button class="link" id="btn-back">← Volver a los nombres</button>
+    </div>
+  </div>
+
+  <div id="screen-result" class="hidden">
+    <div class="card">
+      <div class="gift">🎁</div>
+      <h2>¡Te ha tocado!</h2>
+      <div class="recipient" id="result-name"></div>
+      <p class="warn">🤫 No enseñes la pantalla a nadie.<br>Que no se sepa quién regala a quién hasta el día del intercambio.</p>
+      <button class="btn btn-green" id="btn-hide" style="margin-top:14px">Ocultar</button>
+      <button class="link" id="btn-home">Volver al inicio</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// SHA-256 puro en JS (sin WebCrypto), para que la app funcione en cualquier
+// navegador y contexto, incluido file://. Implementación estándar, dominio público.
+function sha256(ascii) {
+  function rightRotate(value, amount) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+  var mathPow = Math.pow;
+  var maxWord = mathPow(2, 32);
+  var lengthProperty = 'length';
+  var i, j;
+  var result = '';
+  var words = [];
+  var asciiBitLength = ascii[lengthProperty] * 8;
+  var hash = sha256.h = sha256.h || [];
+  var k = sha256.k = sha256.k || [];
+  var primeCounter = k[lengthProperty];
+  var isComposite = {};
+  for (var candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (i = 0; i < 313; i += candidate) {
+        isComposite[i] = candidate;
+      }
+      hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+      k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+    }
+  }
+  ascii += '\x80';
+  while (ascii[lengthProperty] % 64 - 56) ascii += '\x00';
+  for (i = 0; i < ascii[lengthProperty]; i++) {
+    j = ascii.charCodeAt(i);
+    if (j >> 8) return ''; // ASCII only
+    words[i >> 2] |= j << ((3 - i) % 4) * 8;
+  }
+  words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
+  words[words[lengthProperty]] = (asciiBitLength);
+  for (j = 0; j < words[lengthProperty];) {
+    var w = words.slice(j, j += 16);
+    var oldHash = hash;
+    hash = hash.slice(0, 8);
+    for (i = 0; i < 64; i++) {
+      var w15 = w[i - 15], w2 = w[i - 2];
+      var a = hash[0], e = hash[4];
+      var temp1 = hash[7]
+        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+        + ((e & hash[5]) ^ ((~e) & hash[6]))
+        + k[i]
+        + (w[i] = (i < 16) ? w[i] : (
+          w[i - 16]
+          + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+          + w[i - 7]
+          + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+        ) | 0);
+      var temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+      hash = [(temp1 + temp2) | 0].concat(hash);
+      hash[4] = (hash[4] + temp1) | 0;
+    }
+    for (i = 0; i < 8; i++) {
+      hash[i] = (hash[i] + oldHash[i]) | 0;
+    }
+  }
+  for (i = 0; i < 8; i++) {
+    for (j = 3; j + 1; j--) {
+      var b = (hash[i] >> (j * 8)) & 255;
+      result += ((b < 16) ? 0 : '') + b.toString(16);
+    }
+  }
+  return result;
+}
+
+
+
+const DATA = [{"name": "Kamal", "hash": "66dfb85e59a4cf2c1701ace6616fd5f6ba7c0ed758067c57a34e3f5a6e0ff77d"}, {"name": "Miriam", "hash": "d21a5d5b5b22f7a441bf48b29cb5e682db196ade4198fcb956a24853f46766c0"}, {"name": "Cheima", "hash": "63544ab9a46be8d9ae7ec9721954e5c613a79808dbe0c186bce978a457b94058"}, {"name": "Johan", "hash": "08704b12ef4ca67c53a0114677039ac65d5ebc9e4e84e7c6295de6c872c16b45"}, {"name": "Ismael", "hash": "a9f21c5aeb150dbb79a3c7d97b94435cb02bc3bd0d3f73c12a77a5a9956d6ef2"}, {"name": "Sara", "hash": "c59c1ec6694164f30d0d773871d497d4aafb62982652dd3b05ae1db52f55257a"}, {"name": "Rida", "hash": "3ef6e1b0acaede9829b432559938747f8072d588178cd9af07b54c4d2e5c276e"}, {"name": "Embarka", "hash": "b70034362d3c0d01353e26cd36c1fb56de9b078033e9a9145a1a7ec6f036fa44"}, {"name": "Consuelo", "hash": "55b65912f8930ce2b7bb2009ce57e34d620216312f3dc9752d75a371a15b2c4d"}];
+let currentName = null;
+
+const $ = id => document.getElementById(id);
+
+DATA.forEach(d => {
+  const b = document.createElement('button');
+  b.className = 'name-btn';
+  b.textContent = d.name;
+  b.onclick = () => openCode(d.name);
+  $('names').appendChild(b);
+});
+
+function show(id) {
+  ['screen-home', 'screen-code', 'screen-result'].forEach(s => $(s).classList.add('hidden'));
+  $(id).classList.remove('hidden');
+}
+
+function openCode(name) {
+  currentName = name;
+  $('code-title').textContent = 'Hola, ' + name + ' 👋';
+  $('code-input').value = '';
+  $('code-error').textContent = '';
+  show('screen-code');
+  setTimeout(() => $('code-input').focus(), 100);
+}
+
+function reveal() {
+  const code = $('code-input').value.trim().toLowerCase();
+  if (!code) { $('code-error').textContent = 'Escribe tu código.'; return; }
+  const entry = DATA.find(d => d.name === currentName);
+  for (const cand of DATA) {
+    if (sha256(code + '|' + cand.name) === entry.hash) {
+      $('result-name').textContent = cand.name;
+      show('screen-result');
+      return;
+    }
+  }
+  $('code-error').textContent = 'Código incorrecto. Revisa el código que te llegó por privado.';
+}
+
+$('btn-reveal').onclick = reveal;
+$('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') reveal(); });
+$('btn-back').onclick = () => show('screen-home');
+$('btn-hide').onclick = () => { $('result-name').textContent = ''; show('screen-home'); };
+$('btn-home').onclick = () => show('screen-home');
+</script>
+</body>
+</html>
